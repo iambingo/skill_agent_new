@@ -58,6 +58,7 @@ identity:
 tools:
   - tools/skill_agent.yaml
   - tools/TM.yaml
+  - tools/PM.yaml
 extra:
   python:
     source: provider/skill_agent.py
