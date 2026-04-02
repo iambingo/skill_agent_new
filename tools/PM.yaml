@@ -8,11 +8,11 @@ identity:
     ja_JP: "project manager"
 description:
   human:
-    en_US: "Manage projects (list/delete)."
-    zh_Hans: "管理项目：查看项目列表、删除项目"
-    pt_BR: "Gerenciar projetos (listar/excluir)."
-    ja_JP: "プロジェクトを管理（一覧/削除）"
-  llm: "Manage projects (list/delete)"
+    en_US: "Manage projects (add/list/delete)."
+    zh_Hans: "管理项目：新增项目、查看项目列表、删除项目"
+    pt_BR: "Gerenciar projetos (adicionar/listar/excluir)."
+    ja_JP: "プロジェクトを管理（追加/一覧/削除）"
+  llm: "Manage projects (add/list/delete)"
 parameters:
   - name: query
     type: string
@@ -23,10 +23,10 @@ parameters:
       pt_BR: Query
       ja_JP: クエリ
     human_description:
-      en_US: "Command to execute: list projects or delete a project."
-      zh_Hans: "执行的指令，例如：查看项目、删除项目"
-      pt_BR: "Comando a executar: listar projetos ou excluir um projeto."
-      ja_JP: "実行するコマンド（例：プロジェクト一覧、プロジェクト削除）"
+      en_US: "Command to execute: add/list/delete a project."
+      zh_Hans: "执行的指令，例如：新增项目、查看项目、删除项目"
+      pt_BR: "Comando a executar: adicionar/listar/excluir um projeto."
+      ja_JP: "実行するコマンド（例：プロジェクト追加/一覧/削除）"
     llm_description: "supported commands: 新增项目, 查看项目, 删除项目"
     form: llm
   - name: project_name
@@ -38,11 +38,11 @@ parameters:
       pt_BR: Project Name
       ja_JP: プロジェクト名
     human_description:
-      en_US: "Required when deleting a project."
-      zh_Hans: "删除项目时必填，填写要删除的项目名称"
-      pt_BR: "Obrigatório ao excluir um projeto."
-      ja_JP: "プロジェクト削除時に必須"
-    llm_description: "Project name to delete. Required for delete command."
+      en_US: "Required when adding or deleting a project."
+      zh_Hans: "新增项目或删除项目时必填，填写项目名称"
+      pt_BR: "Obrigatório ao adicionar ou excluir um projeto."
+      ja_JP: "プロジェクト追加・削除時に必須"
+    llm_description: "Project name. Required for 新增项目 and 删除项目 commands."
     form: llm
 extra:
   python:
