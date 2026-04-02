@@ -7,10 +7,10 @@ description: "指导 Agent 讲冷笑话或段子并生成文件。用户要讲�
 
 ## 目标
 
-根据用户需求选择笑话类型并生成对应的交付文件：
+根据用户需求选择笑话类型并直接输出结果：
 
-- 冷笑话：生成 `txt`
-- 段子：生成 `md`
+- 冷笑话：输出纯文本
+- 段子：输出 Markdown 格式文本
 
 ## 触发条件
 
@@ -46,17 +46,16 @@ description: "指导 Agent 讲冷笑话或段子并生成文件。用户要讲�
 
 ### 生成脚本
 
-在生成交付物时，调用脚本生成 txt 文件：
+调用脚本生成冷笑话：
 
 ```bash
-python Scripts/generate_cold_jokes.py --topic "<主题可选>" --count 3 --out "<输出路径>.txt"
+python Scripts/generate_cold_jokes.py --topic "<主题可选>" --count 3
 ```
 
 要求：
 
-- 输出文件必须是 UTF-8 编码
 - 每条以 `冷笑话：   ` 开头
-- 最终输出物为冷笑话文本内容和一个txt文件
+- 脚本直接输出文本内容到 stdout，将结果返回给用户
 
 ## 段子分支
 
@@ -68,14 +67,13 @@ python Scripts/generate_cold_jokes.py --topic "<主题可选>" --count 3 --out "
 
 ### 生成脚本
 
-调用脚本生成 md 文件：
+调用脚本生成段子：
 
 ```bash
-python Scripts/generate_duanzi_md.py --topic "<主题可选>" --out "<输出路径>.md"
+python Scripts/generate_duanzi_md.py --topic "<主题可选>"
 ```
 
 要求：
 
-- 输出文件必须是 UTF-8 编码
-- Markdown 中每个段子行以 `段子：  ` 开头
-- 最终输出物为段子文本内容和一个md文件
+- 每个段子行以 `段子：  ` 开头
+- 脚本直接输出文本内容到 stdout，将结果返回给用户

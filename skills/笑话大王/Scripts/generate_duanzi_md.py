@@ -3,12 +3,6 @@ import hashlib
 import os
 
 
-def write_text(path, content):
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(content)
-
-
 def read_text(path):
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read()
@@ -96,10 +90,8 @@ def build_md(topic):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", default="", help="主题，可选")
-    parser.add_argument("--out", required=True, help="输出 md 路径")
     args = parser.parse_args()
-    write_text(args.out, build_md(args.topic))
-    print(args.out)
+    print(build_md(args.topic))
 
 
 if __name__ == "__main__":
