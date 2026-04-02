@@ -1,7 +1,6 @@
 import re
 import json
 import os
-import time
 import uuid
 import base64
 import hashlib
@@ -15,8 +14,6 @@ from utils.tools import (
     _extract_url_and_name,
     _guess_mime_type,
     _infer_ext_from_url,
-    _is_allow_reply,
-    _is_deny_reply,
     _list_dir,
     _parse_tool_call,
     _safe_filename,
@@ -26,21 +23,10 @@ from utils.tools import (
     _split_message_content,
  )
 
-from utils.skill_agent_constants import HISTORY_TRANSCRIPT_MAX_CHARS
 from utils.skill_agent_debug import _dbg, _model_brief
 from utils.skill_agent_exec import _cleanup_old_temp_sessions, _detect_skills_root
 from utils.skill_agent_runtime import _AgentRuntime
 from utils.skill_agent_schemas import TOOL_SCHEMAS, _tool_call_retry_prompt, _validate_tool_arguments
-from utils.skill_agent_storage import (
-    _append_history_turn,
-    _get_history_storage_key,
-    _get_resume_storage_key,
-    _get_session_dir_storage_key,
-    _storage_get_json,
-    _storage_get_text,
-    _storage_set_json,
-    _storage_set_text,
-)
 from utils.skill_agent_uploads import _build_uploads_context
 
 from dify_plugin import Tool
@@ -96,48 +82,12 @@ class SkillAgentTool(Tool):
             return
         user_input = str(query)
 
-        storage = self.session.storage
-        resume_key = _get_resume_storage_key(self.session)
-        history_key = _get_history_storage_key(self.session)
-        session_dir_key = _get_session_dir_storage_key(self.session)
-        resume_state = _storage_get_json(storage, resume_key)
-        resume_pending = bool(resume_state.get("pending"))
-        is_resuming = False
-
         plugin_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         temp_root = os.path.join(plugin_root, "temp")
         os.makedirs(temp_root, exist_ok=True)
-        persisted_session_dir = _storage_get_text(storage, session_dir_key).strip()
-        if persisted_session_dir and os.path.isdir(persisted_session_dir):
-            session_dir = persisted_session_dir
-        else:
-            session_dir = os.path.join(temp_root, f"dify-skill-{uuid.uuid4().hex[:8]}-")
-        resume_context = ""
-
-        if resume_pending and _is_deny_reply(user_input):
-            _storage_set_json(storage, resume_key, None)
-            yield self.create_text_message("🤝已收到你的拒绝，本次不会在 temp 目录创建脚本继续执行。\n")
-            return
-        if resume_pending and _is_allow_reply(user_input):
-            candidate = str(resume_state.get("session_dir") or "").strip()
-            if candidate:
-                session_dir = candidate
-                os.makedirs(session_dir, exist_ok=True)
-                _storage_set_text(storage, session_dir_key, session_dir)
-                original_query_for_resume = str(resume_state.get("original_query") or "").strip()
-                if original_query_for_resume:
-                    query = original_query_for_resume
-                is_resuming = True
-                _storage_set_json(storage, resume_key, None)
-                resume_context = (
-                    "\n\n[续跑授权]\n"
-                    + "用户已明确允许你在 temp 会话目录中自行创建脚本、必要时安装依赖，并继续上一轮未完成的生成。\n"
-                    + "请直接基于当前 temp 会话目录中的中间产物继续推进，优先生成最终可交付文件。\n"
-                )
+        session_dir = os.path.join(temp_root, f"dify-skill-{uuid.uuid4().hex[:8]}-")
         os.makedirs(session_dir, exist_ok=True)
-        _storage_set_text(storage, session_dir_key, session_dir)
-        if not is_resuming:
-            _cleanup_old_temp_sessions(temp_root, keep=4, protect_dirs={session_dir})
+        _cleanup_old_temp_sessions(temp_root, keep=4, protect_dirs={session_dir})
 
         file_items: list[Any] = []
         files_param = tool_parameters.get("files")
@@ -212,36 +162,6 @@ class SkillAgentTool(Tool):
         )
 
         history_messages: list[Any] = []
-        if history_turns > 0:
-            history_state = _storage_get_json(storage, history_key)
-            turns = history_state.get("turns")
-            if isinstance(turns, list) and turns:
-                picked: list[tuple[str, str]] = []
-                for t in reversed(turns[-history_turns:]):
-                    if not isinstance(t, dict):
-                        continue
-                    u = str(t.get("user") or "").strip()
-                    a = str(t.get("assistant") or "").strip()
-                    if not u and not a:
-                        continue
-                    picked.append((u, a))
-                if picked:
-                    acc: list[tuple[str, str]] = []
-                    total = 0
-                    for u, a in picked:
-                        block_len = len(u) + len(a)
-                        if total + block_len > HISTORY_TRANSCRIPT_MAX_CHARS and acc:
-                            break
-                        acc.append((u, a))
-                        total += block_len
-                        if total >= HISTORY_TRANSCRIPT_MAX_CHARS:
-                            break
-                    acc.reverse()
-                    for u, a in acc:
-                        if u:
-                            history_messages.append(UserPromptMessage(content=u))
-                        if a:
-                            history_messages.append(AssistantPromptMessage(content=a))
 
         skills_index = runtime.load_skills_index()
         try:
@@ -339,7 +259,6 @@ class SkillAgentTool(Tool):
             + '或 {"type":"final","content":"..."}\n\n'
             + "技能索引（用于判断是否需要调用技能）：\n"
             + json.dumps(skills_index, ensure_ascii=False)
-            + (resume_context or "")
         )
 
         messages: list[Any] = [SystemPromptMessage(content=system_content)]
@@ -360,7 +279,6 @@ class SkillAgentTool(Tool):
         final_file_meta: dict[str, dict[str, str]] = {}
         empty_responses = 0
         saved_asset_fingerprints: set[str] = set()
-        resume_saved = False
         final_text_already_streamed = False
 
         def stream_text_to_user(text: str, chunk_size: int = 8) -> Generator[ToolInvokeMessage]:
@@ -739,35 +657,14 @@ class SkillAgentTool(Tool):
                                     yield self.create_text_message(
                                         "❌命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
                                     )
-                            if isinstance(result, dict) and result.get("error") == "no_executable_found":
-                                skill = str(result.get("skill") or arguments.get("skill_name") or "")
-                                module = str(result.get("module") or "")
+                            if isinstance(result, dict) and result.get(“error”) == “no_executable_found”:
+                                skill = str(result.get(“skill”) or arguments.get(“skill_name”) or “”)
+                                module = str(result.get(“module”) or “”)
                                 forced_text = (
-                                    f"当前技能“{skill}”的说明文档要求生成文件，但技能包内未找到可执行入口（例如脚本或 Python 模块）。\n"
-                                    f"本次尝试的入口为 python -m {module}，但在技能目录中不存在，因此无法继续生成目标文件。\n\n"
-                                    "我已先按技能说明生成了可交付的中间产物（例如设计哲学 .md）。\n"
-                                    "你是否允许我在 temp 目录中自行创建可执行脚本，并在需要时安装依赖后，再尝试生成最终文件？"
-                                )
-                                _storage_set_json(
-                                    storage,
-                                    resume_key,
-                                    {
-                                        "pending": True,
-                                        "session_dir": session_dir,
-                                        "original_query": query,
-                                        "reason": "no_executable_found",
-                                        "skill": skill,
-                                        "module": module,
-                                        "created_at": int(time.time()),
-                                    },
-                                )
-                                resume_saved = True
-                                _dbg(
-                                    "resume_state_saved "
-                                    + _shorten_text(
-                                        {"session_dir": session_dir, "skill": skill, "module": module, "pending": True},
-                                        300,
-                                    )
+                                    f”当前技能”{skill}”的说明文档要求生成文件，但技能包内未找到可执行入口（例如脚本或 Python 模块）。\n”
+                                    f”本次尝试的入口为 python -m {module}，但在技能目录中不存在，因此无法继续生成目标文件。\n\n”
+                                    “我已先按技能说明生成了可交付的中间产物（例如设计哲学 .md）。\n”
+                                    “你是否允许我在 temp 目录中自行创建可执行脚本，并在需要时安装依赖后，再尝试生成最终文件？”
                                 )
                         elif tool_name == "get_session_context":
                             result = runtime.get_session_context()
@@ -1061,8 +958,6 @@ class SkillAgentTool(Tool):
                 else:
                     final_text = f"❌超过最大执行轮数 max_steps={max_steps}，仍未得到最终结果"
         finally:
-            if not resume_saved and not is_resuming and resume_pending:
-                _storage_set_json(storage, resume_key, None)
             temp_files_text = ""
             try:
                 temp_entries = _list_dir(session_dir, max_depth=10)
@@ -1105,45 +1000,16 @@ class SkillAgentTool(Tool):
             except Exception:
                 has_any_files = False
 
-            assistant_text_for_history = ""
             if final_text and final_text.strip():
                 if not files_to_send and final_text.strip() == "已生成文件。":
                     final_text = "已生成中间文件，但未调用 export_temp_file 标记交付文件。"
-                assistant_text_for_history = final_text.strip()
-                _append_history_turn(
-                    storage,
-                    history_key=history_key,
-                    user_text=user_input,
-                    assistant_text=assistant_text_for_history,
-                )
                 if not final_text_already_streamed:
                     yield from stream_text_to_user(final_text)
             elif files_to_send:
-                assistant_text_for_history = "已生成文件。"
-                _append_history_turn(
-                    storage,
-                    history_key=history_key,
-                    user_text=user_input,
-                    assistant_text=assistant_text_for_history,
-                )
                 yield from stream_text_to_user("已生成文件。")
             elif has_any_files:
-                assistant_text_for_history = "已生成中间文件，但未调用 export_temp_file 标记交付文件。"
-                _append_history_turn(
-                    storage,
-                    history_key=history_key,
-                    user_text=user_input,
-                    assistant_text=assistant_text_for_history,
-                )
                 yield from stream_text_to_user("已生成中间文件，但未调用 export_temp_file 标记交付文件。")
             else:
-                assistant_text_for_history = "未生成任何文本或文件输出。"
-                _append_history_turn(
-                    storage,
-                    history_key=history_key,
-                    user_text=user_input,
-                    assistant_text=assistant_text_for_history,
-                )
                 yield from stream_text_to_user("未生成任何文本或文件输出。")
 
             yielded: set[str] = set()
