@@ -27,7 +27,7 @@ parameters:
       zh_Hans: "执行的指令，例如：查看项目、删除项目"
       pt_BR: "Comando a executar: listar projetos ou excluir um projeto."
       ja_JP: "実行するコマンド（例：プロジェクト一覧、プロジェクト削除）"
-    llm_description: "supported commands: 查看项目, 删除项目"
+    llm_description: "supported commands: 新增项目, 查看项目, 删除项目"
     form: llm
   - name: project_name
     type: string

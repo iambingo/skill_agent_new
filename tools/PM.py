@@ -39,6 +39,27 @@ class PMTool(Tool):
             yield self.create_text_message("❌请填写指令（query）。\n")
             return
 
+        # 新增项目
+        if any(kw in query for kw in ("新增项目", "创建项目", "添加项目", "add")):
+            if not project_name:
+                yield self.create_text_message("❌新增项目时必须填写项目名称（project_name）。\n")
+                return
+            root = get_skills_root()
+            target = root / project_name
+            if target.exists() and target.is_dir():
+                yield self.create_text_message(f"❌项目「{project_name}」已存在，请重新选择一个项目名称。\n")
+                return
+            try:
+                target.mkdir(parents=True, exist_ok=False)
+            except Exception as e:
+                yield self.create_text_message(f"❌创建项目失败：{e}\n")
+                return
+            yield self.create_text_message(f"✅已创建项目「{project_name}」。\n")
+            projects = list_projects()
+            lines = [f"{idx + 1}. {p.name}" for idx, p in enumerate(projects)]
+            yield self.create_text_message("👓当前项目列表：\n" + "\n".join(lines) + "\n")
+            return
+
         # 查看项目
         if any(kw in query for kw in ("查看项目", "项目列表", "所有项目", "list")):
             projects = list_projects()

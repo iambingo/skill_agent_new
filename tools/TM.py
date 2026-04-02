@@ -159,6 +159,14 @@ class TMTool(Tool):
             return
 
         if command in ("新增技能", "存入技能", "保存技能"):
+            _skills_root = os.environ.get("SKILLS_ROOT", "").strip()
+            _root = Path(_skills_root) if _skills_root else Path(__file__).resolve().parent.parent / "skills"
+            if not (_root / project_name).is_dir():
+                yield self.create_text_message(
+                    f"❌项目「{project_name}」不存在，请先在「项目管理」中新增该项目，再回来添加技能。\n"
+                )
+                return
+
             file_items: list[Any] = []
             if isinstance(files_param, list):
                 file_items = [x for x in files_param if x]
