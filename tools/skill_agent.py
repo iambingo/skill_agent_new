@@ -15,7 +15,6 @@ from utils.tools import (
     _infer_ext_from_url,
     _is_allow_reply,
     _is_deny_reply,
-    _list_dir,
     _parse_tool_call,
     _safe_filename,
     _safe_get,
@@ -654,17 +653,7 @@ class SkillAgentTool(Tool):
                         final_text = forced_text
                         break
                     if step_idx >= max_steps - 1:
-                        try:
-                            has_files = any(
-                                e.get("type") == "file"
-                                for e in _list_dir(session_dir, max_depth=2)
-                                if isinstance(e, dict)
-                            )
-                        except Exception:
-                            has_files = False
-                        if has_files:
-                            final_text = "已生成文件。"
-                            break
+                        break
                     continue
 
                 json_text = _extract_first_json_object(res_text)
