@@ -90,6 +90,7 @@ def build_md(topic):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", default="", help="主题，可选")
+    parser.add_argument("--out", default="", help="忽略，结果始终输出到 stdout")
     args = parser.parse_args()
     print(build_md(args.topic))
 

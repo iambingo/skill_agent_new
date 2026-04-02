@@ -55,6 +55,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(“--topic”, default=””, help=”主题，可选”)
     parser.add_argument(“--count”, type=int, default=3, help=”条数，默认 3”)
+    parser.add_argument(“--out”, default=””, help=”忽略，结果始终输出到 stdout”)
     args = parser.parse_args()
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
