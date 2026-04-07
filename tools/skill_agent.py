@@ -302,24 +302,24 @@ class SkillAgentTool(Tool):
 
         system_content = (
             system_prompt.strip()
-            + "\n\n你是一个使用 Skills 文件夹作为“工具箱”的通用型 Agent。\n"
+            + '\n\n你是一个使用 Skills 文件夹作为"工具箱"的通用型 Agent。\n'
             + "\n[会话路径]\n"
             + f"- session_dir: {session_dir}\n"
             + f"- skills_root: {skills_root}\n"
             + progressive_disclosure_rules
-            + “路径规则：uploads/ 位于 session_dir 下；run_skill_command 的 cwd 在 skills_root/<skill_name> 下。\n”
-            + “依赖安装规则：如需 npm install/npm ci/bun install，必须用 run_skill_command 在技能包内含 package.json 的目录执行（通过 cwd_relative 指到该目录）。\n”
-            + “补充规则1：如果用户请求中已经明确给出具体类型/参数，则视为已确认，不要重复追问，直接进入对应分支执行。\n”
-            + “补充规则2：当你需要向用户追问任何信息时：本轮必须只输出问题与选项，并立刻结束；不得在同一轮继续读取任何文件、执行任何命令、生成任何产物。\n”
-            + “补充规则3：默认值只能在用户明确说’默认/随便/你决定’时启用；用户未回复不等于选择了默认。\n”
-            + (uploads_context or “”)
-            + “技能执行完成后，直接将结果以文本形式输出给用户，不需要写入临时文件或标记交付文件。\n\n”
-            + “可用动作：\n”
-            + “- get_session_context()\n”
-            + “- get_skill_metadata(skill_name)\n”
-            + “- list_skill_files(skill_name, max_depth)\n”
-            + “- read_skill_file(skill_name, relative_path, max_chars)\n”
-            + “- run_skill_command(skill_name, command, cwd_relative, auto_install)\n\n”
+            + "路径规则：uploads/ 位于 session_dir 下；run_skill_command 的 cwd 在 skills_root/<skill_name> 下。\n"
+            + "依赖安装规则：如需 npm install/npm ci/bun install，必须用 run_skill_command 在技能包内含 package.json 的目录执行（通过 cwd_relative 指到该目录）。\n"
+            + "补充规则1：如果用户请求中已经明确给出具体类型/参数，则视为已确认，不要重复追问，直接进入对应分支执行。\n"
+            + "补充规则2：当你需要向用户追问任何信息时：本轮必须只输出问题与选项，并立刻结束；不得在同一轮继续读取任何文件、执行任何命令、生成任何产物。\n"
+            + "补充规则3：默认值只能在用户明确说’默认/随便/你决定’时启用；用户未回复不等于选择了默认。\n"
+            + (uploads_context or "")
+            + "技能执行完成后，直接将结果以文本形式输出给用户，不需要写入临时文件或标记交付文件。\n\n"
+            + "可用动作：\n"
+            + "- get_session_context()\n"
+            + "- get_skill_metadata(skill_name)\n"
+            + "- list_skill_files(skill_name, max_depth)\n"
+            + "- read_skill_file(skill_name, relative_path, max_chars)\n"
+            + "- run_skill_command(skill_name, command, cwd_relative, auto_install)\n\n"
             + "如果模型支持 function call，请直接发起工具调用；若不支持，则用 JSON 协议响应：\n"
             + '{"type":"tool","name":"get_skill_metadata","arguments":{"skill_name":"xxx"}}\n'
             + '或 {"type":"final","content":"..."}\n\n'
@@ -626,17 +626,19 @@ class SkillAgentTool(Tool):
                                 auto_install=bool(arguments.get("auto_install") or False),
                             )
 
-                            if (
-                                isinstance(result, dict)
-                                and result.get("returncode") is not None
-                                and int(result.get("returncode") or 0) != 0
-                            ):
-                                stderr = str(result.get("stderr") or "").strip()
-                                if stderr:
-                                    yield self.create_text_message(
-                                        "❌命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
-                                    )
-                        elif tool_name == “get_session_context”:
+                            if isinstance(result, dict):
+                                if result.get("returncode") is not None and int(result.get("returncode") or 0) == 0:
+                                    stdout = str(result.get("stdout") or "").strip()
+                                    if stdout:
+                                        final_text = stdout
+                                        break
+                                elif int(result.get("returncode") or 0) != 0:
+                                    stderr = str(result.get("stderr") or "").strip()
+                                    if stderr:
+                                        yield self.create_text_message(
+                                            "❌命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
+                                        )
+                        elif tool_name == "get_session_context":
                             result = runtime.get_session_context()
                         else:
                             result = {"error": f"unknown tool: {tool_name}"}
@@ -796,6 +798,18 @@ class SkillAgentTool(Tool):
                         cwd_relative=(str(arguments.get("cwd_relative")) if arguments.get("cwd_relative") else None),
                         auto_install=bool(arguments.get("auto_install") or False),
                     )
+                    if isinstance(result, dict):
+                        if result.get("returncode") is not None and int(result.get("returncode") or 0) == 0:
+                            stdout = str(result.get("stdout") or "").strip()
+                            if stdout:
+                                final_text = stdout
+                                break
+                        elif int(result.get("returncode") or 0) != 0:
+                            stderr = str(result.get("stderr") or "").strip()
+                            if stderr:
+                                yield self.create_text_message(
+                                    "❌命令执行失败（stderr）：\n" + _shorten_text(redact_user_visible_text(stderr), 1200) + "\n"
+                                )
                 elif name == "get_session_context":
                     result = runtime.get_session_context()
                 else:
