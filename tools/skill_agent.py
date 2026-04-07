@@ -513,6 +513,7 @@ class SkillAgentTool(Tool):
                     empty_responses = 0
                     messages.append(AssistantPromptMessage(content=res_text or "", tool_calls=tool_calls))
                     forced_text: str | None = None
+                    skill_done = False
                     for tc in tool_calls:
                         call_id, name, arguments = _parse_tool_call(tc)
                         tool_name = str(name or "")
@@ -631,6 +632,7 @@ class SkillAgentTool(Tool):
                                     stdout = str(result.get("stdout") or "").strip()
                                     if stdout:
                                         final_text = stdout
+                                        skill_done = True
                                         break
                                 elif int(result.get("returncode") or 0) != 0:
                                     stderr = str(result.get("stderr") or "").strip()
@@ -651,8 +653,9 @@ class SkillAgentTool(Tool):
                                 content=json.dumps(result, ensure_ascii=False),
                             )
                         )
-                    if forced_text:
-                        final_text = forced_text
+                    if skill_done or forced_text:
+                        if forced_text:
+                            final_text = forced_text
                         break
                     if step_idx >= max_steps - 1:
                         break
