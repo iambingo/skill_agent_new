@@ -153,6 +153,9 @@ class _AgentRuntime:
 
         import shlex
         if isinstance(command, str):
+            # Normalize line continuations (\<newline>) and bare newlines to spaces
+            # so shlex.split doesn't raise ValueError on multi-line curl commands
+            command = command.replace("\\\n", " ").replace("\n", " ")
             command = shlex.split(command)
 
         if not command:

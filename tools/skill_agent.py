@@ -512,7 +512,6 @@ class SkillAgentTool(Tool):
                 if tool_calls:
                     empty_responses = 0
                     messages.append(AssistantPromptMessage(content=res_text or "", tool_calls=tool_calls))
-                    forced_text: str | None = None
                     skill_done = False
                     for tc in tool_calls:
                         call_id, name, arguments = _parse_tool_call(tc)
@@ -653,9 +652,7 @@ class SkillAgentTool(Tool):
                                 content=json.dumps(result, ensure_ascii=False),
                             )
                         )
-                    if skill_done or forced_text:
-                        if forced_text:
-                            final_text = forced_text
+                    if skill_done:
                         break
                     if step_idx >= max_steps - 1:
                         break
