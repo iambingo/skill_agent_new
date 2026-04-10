@@ -38,11 +38,11 @@ parameters:
       pt_BR: Command
       ja_JP: コマンド
     human_description:
-      en_US: "supported commands: add, delete, list, download"
-      zh_Hans: "支持：查看技能、新增技能、删除技能N、下载技能N"
-      pt_BR: "Gerenciar pacotes de habilidades locais (adicionar/remover/visualizar/baixar)."
-      ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示/ダウンロード）"
-    llm_description: "supported commands: add, delete, list, download"
+      en_US: "supported commands: add, delete, list, download, detail"
+      zh_Hans: "支持：查看技能、查看技能详情、新增技能、删除技能N、下载技能N"
+      pt_BR: "Gerenciar pacotes de habilidades locais (adicionar/remover/visualizar/baixar/detalhar)."
+      ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示/ダウンロード/詳細）"
+    llm_description: "supported commands: add, delete, list, download, detail"
     form: llm
   - name: files
     type: files

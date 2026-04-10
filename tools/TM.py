@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import mimetypes
 import re
 import shutil
@@ -156,6 +157,27 @@ class TMTool(Tool):
             lines = [f"{idx + 1}. {p.name}" for idx, p in enumerate(skills)]
             yield self.create_text_message(f"✅查询成功，项目【{project_name}】当前技能列表如下：\n")
             yield self.create_text_message("\n".join(lines))
+            return
+
+        if command in ("查看技能详情",):
+            skills = list_skills_sorted(project_name)
+            if not skills:
+                yield self.create_text_message(f"❌项目【{project_name}】当前没有已存入的技能包。\n")
+                return
+            result: dict[str, str] = {}
+            for p in skills:
+                skill_md = p / "SKILL.md"
+                description = ""
+                if skill_md.is_file():
+                    content = skill_md.read_text(encoding="utf-8", errors="ignore")
+                    for line in content.splitlines()[1:]:
+                        if line.strip() == "---":
+                            break
+                        if line.startswith("description:"):
+                            description = line.split(":", 1)[1].strip()
+                            break
+                result[p.name] = description
+            yield self.create_text_message(json.dumps(result, ensure_ascii=False, indent=2))
             return
 
         if command in ("新增技能", "存入技能", "保存技能"):
