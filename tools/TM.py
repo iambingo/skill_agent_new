@@ -63,6 +63,36 @@ def list_skills_sorted(project_name: str) -> list[Path]:
     return folders
 
 
+def _parse_description(content: str) -> str:
+    """从 SKILL.md frontmatter 中提取 description，支持单行和 >/ | 块标量。"""
+    raw_lines = content.splitlines()
+    if not raw_lines or raw_lines[0].strip() != "---":
+        return ""
+    i = 1
+    while i < len(raw_lines):
+        line = raw_lines[i]
+        if line.strip() == "---":
+            break
+        if line.startswith("description:"):
+            val = line.split(":", 1)[1].strip()
+            if val in (">", "|", ">-", "|-", ">+", "|+"):
+                # 块标量：收集后续缩进行
+                block: list[str] = []
+                i += 1
+                while i < len(raw_lines):
+                    bl = raw_lines[i]
+                    if bl.strip() == "---":
+                        break
+                    if bl and not bl[0].isspace():
+                        break  # 新的 key，停止
+                    block.append(bl.strip())
+                    i += 1
+                return " ".join(s for s in block if s)
+            return val
+        i += 1
+    return ""
+
+
 def extract_url_and_name(file_item: Any) -> tuple[str | None, str | None]:
     url = None
     name = None
@@ -169,12 +199,7 @@ class TMTool(Tool):
                 description = ""
                 if skill_md.is_file():
                     content = skill_md.read_text(encoding="utf-8", errors="ignore")
-                    for line in content.splitlines()[1:]:
-                        if line.strip() == "---":
-                            break
-                        if line.startswith("description:"):
-                            description = line.split(":", 1)[1].strip()
-                            break
+                    description = _parse_description(content)
                 lines.append(f"{idx + 1}. {p.name}：{description}")
             yield self.create_text_message(f"✅项目【{project_name}】当前技能和详情如下：\n")
             yield self.create_text_message("\n".join(lines))
