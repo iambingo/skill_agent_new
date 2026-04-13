@@ -367,6 +367,27 @@ class SkillAgentTool(Tool):
             s = re.sub(r"/[^\s\r\n\t\"']+", "<REDACTED_PATH>", s)
             return s
 
+        def extract_dify_sse_result(stdout: str) -> str | None:
+            """若 stdout 是 Dify SSE 流，提取 workflow_finished 的 outputs；否则返回 None。"""
+            has_sse = False
+            for line in stdout.splitlines():
+                line = line.strip()
+                if not line.startswith("data: "):
+                    continue
+                has_sse = True
+                try:
+                    event = json.loads(line[6:])
+                except Exception:
+                    continue
+                if event.get("event") == "workflow_finished":
+                    outputs = event.get("data", {}).get("outputs", {})
+                    if not outputs:
+                        return ""
+                    if len(outputs) == 1:
+                        return str(next(iter(outputs.values())))
+                    return json.dumps(outputs, ensure_ascii=False, indent=2)
+            return None if not has_sse else stdout
+
         def invoke_llm_live(
             *, prompt_messages: list[Any], tools: list[Any] | None
         ) -> Generator[ToolInvokeMessage, None, tuple[str, list[Any], Any, int, bool]]:
@@ -630,7 +651,7 @@ class SkillAgentTool(Tool):
                                 if result.get("returncode") is not None and int(result.get("returncode") or 0) == 0:
                                     stdout = str(result.get("stdout") or "").strip()
                                     if stdout:
-                                        final_text = stdout
+                                        final_text = extract_dify_sse_result(stdout) or stdout
                                         skill_done = True
                                         break
                                 elif int(result.get("returncode") or 0) != 0:
@@ -802,7 +823,7 @@ class SkillAgentTool(Tool):
                         if result.get("returncode") is not None and int(result.get("returncode") or 0) == 0:
                             stdout = str(result.get("stdout") or "").strip()
                             if stdout:
-                                final_text = stdout
+                                final_text = extract_dify_sse_result(stdout) or stdout
                                 break
                         elif int(result.get("returncode") or 0) != 0:
                             stderr = str(result.get("stderr") or "").strip()
