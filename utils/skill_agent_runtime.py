@@ -183,6 +183,32 @@ class _AgentRuntime:
         # ── 列表命令：保持原有逻辑 ──
         if not command:
             return {"error": "command must be a non-empty list"}
+
+        # LLM 有时会在列表命令的 -d 参数里双重转义 JSON（{\"key\":\"val\"}）。
+        # 用 json.loads 验证，确认 unescape 后是合法 JSON 再替换。
+        import json as _json
+        _DATA_FLAGS = {"-d", "--data", "--data-raw", "--data-binary"}
+        _fixed: list[str] = []
+        _ci = 0
+        while _ci < len(command):
+            _arg = command[_ci]
+            if _arg in _DATA_FLAGS and _ci + 1 < len(command):
+                _fixed.append(_arg)
+                _ci += 1
+                _data = command[_ci]
+                if '\\"' in _data:
+                    _unescaped = _data.replace('\\"', '"')
+                    try:
+                        _json.loads(_unescaped)
+                        _data = _unescaped
+                    except Exception:
+                        pass
+                _fixed.append(_data)
+            else:
+                _fixed.append(_arg)
+            _ci += 1
+        command = _fixed
+
         exe = command[0]
         if exe == "python":
             if "-m" in command:
