@@ -383,7 +383,7 @@ class SkillAgentTool(Tool):
                         return ""
                     if len(outputs) == 1:
                         return str(next(iter(outputs.values())))
-                    return json.dumps(outputs, ensure_ascii=False, indent=2)
+                    return "\n".join(str(v) for v in outputs.values())
             return None
 
         def invoke_llm_live(
