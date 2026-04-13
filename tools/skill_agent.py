@@ -265,6 +265,8 @@ class SkillAgentTool(Tool):
             # Pre-load metadata into runtime cache to satisfy progressive disclosure gate checks
             metadata = runtime.get_skill_metadata(preselected_skill_folder)
             skill_md_content = metadata.get('skill_md')
+            # Pre-run list_skill_files and cache result to skip that step
+            skill_files_result = runtime.list_skill_files(preselected_skill_folder, 3)
             # Filter skills index to only expose the preselected skill
             skills_index = {"root": skills_index.get("root"), "skills": [matched]}
 
@@ -277,13 +279,13 @@ class SkillAgentTool(Tool):
 
         if preselected_skill_folder:
             progressive_disclosure_rules = (
-                f"【技能已预先指定】系统已为你锁定技能：《{skill_name_param}》（folder: {preselected_skill_folder}），其元数据已预加载。\n"
-                + f"以下是该技能的说明书(skill.md)：\n\n {skill_md_content}\n"
+                f"【技能已预先指定】系统已为你锁定技能：《{skill_name_param}》（folder: {preselected_skill_folder}），其元数据与目录结构已预加载，无需再调用 get_skill_metadata 或 list_skill_files。\n"
+                + f"以下是该技能的说明书(skill.md)：\n\n{skill_md_content}\n\n"
+                + f"以下是该技能的目录结构：\n\n{json.dumps(skill_files_result, ensure_ascii=False)}\n\n"
                 + "你必须仅使用该技能，忽略技能索引中的其他技能，并直接按以下步骤执行：\n"
-                + f"1 调用 list_skill_files({preselected_skill_folder!r}) 查看技能包目录结构\n"
-                + "2) 按需调用 read_skill_file 读取具体文件\n"
-                + "3) 按说明书内容执行脚本/命令（run_skill_command）\n"
-                + "4) 执行完成后将结果直接输出给用户\n"
+                + "1) 按需调用 read_skill_file 读取具体文件\n"
+                + "2) 按说明书内容执行脚本/命令（run_skill_command）\n"
+                + "3) 执行完成后将结果直接输出给用户\n"
             )
 
         else:
