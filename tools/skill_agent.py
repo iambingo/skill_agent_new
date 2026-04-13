@@ -284,7 +284,7 @@ class SkillAgentTool(Tool):
                 + f"以下是该技能的目录结构：\n\n{json.dumps(skill_files_result, ensure_ascii=False)}\n\n"
                 + "你必须仅使用该技能，忽略技能索引中的其他技能，并直接按以下步骤执行：\n"
                 + "1) 按需调用 read_skill_file 读取具体文件\n"
-                + "2) 必须调用 run_skill_command 执行命令，禁止跳过直接输出文本\n"
+                + "2) 严格按说明书执行：若说明书要求执行命令，必须调用 run_skill_command，不得凭已有知识跳过直接输出\n"
                 + "3) 执行完成后将结果直接输出给用户\n"
             )
 
