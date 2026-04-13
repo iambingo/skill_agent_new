@@ -368,13 +368,11 @@ class SkillAgentTool(Tool):
             return s
 
         def extract_dify_sse_result(stdout: str) -> str | None:
-            """若 stdout 是 Dify SSE 流，提取 workflow_finished 的 outputs；否则返回 None。"""
-            has_sse = False
+            """若 stdout 中包含 Dify workflow_finished 事件，提取其 outputs；否则返回 None。"""
             for line in stdout.splitlines():
                 line = line.strip()
                 if not line.startswith("data: "):
                     continue
-                has_sse = True
                 try:
                     event = json.loads(line[6:])
                 except Exception:
@@ -386,7 +384,7 @@ class SkillAgentTool(Tool):
                     if len(outputs) == 1:
                         return str(next(iter(outputs.values())))
                     return json.dumps(outputs, ensure_ascii=False, indent=2)
-            return None if not has_sse else stdout
+            return None
 
         def invoke_llm_live(
             *, prompt_messages: list[Any], tools: list[Any] | None
