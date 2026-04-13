@@ -151,42 +151,38 @@ class _AgentRuntime:
         if not self.skills_root:
             return {"error": "skills_root not found"}
 
-        import json as _json
         import shlex
-        if isinstance(command, str):
-            # Normalize line continuations (\<newline>) and bare newlines to spaces
-            # so shlex.split doesn't raise ValueError on multi-line curl commands
-            command = command.replace("\\\n", " ").replace("\n", " ")
-            command = shlex.split(command)
+        skill_path = _safe_join(self.skills_root, skill_name)
 
+        # ── 字符串命令：shell=True，让系统 shell 处理所有引号，避免 shlex 的转义问题 ──
+        if isinstance(command, str):
+            command_str = command.replace("\\\n", " ").replace("\n", " ").strip()
+            if not command_str:
+                return {"error": "command must be non-empty"}
+            first_word = command_str.split()[0]
+            if first_word in ("python", "python3"):
+                # 替换为当前解释器路径
+                command_str = sys.executable + command_str[len(first_word):]
+            elif first_word not in ALLOWED_COMMANDS:
+                return {"error": f"command not allowed: {first_word}"}
+            cwd = skill_path if not cwd_relative else _safe_join(skill_path, str(cwd_relative).strip("/\\"))
+            try:
+                result = subprocess.run(
+                    command_str,
+                    shell=True,
+                    cwd=cwd,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="ignore",
+                )
+                return {"returncode": result.returncode, "stdout": result.stdout.strip(), "stderr": result.stderr.strip()}
+            except Exception as e:
+                return {"error": "subprocess_failed", "exception": str(e)}
+
+        # ── 列表命令：保持原有逻辑 ──
         if not command:
             return {"error": "command must be a non-empty list"}
-
-        # Fix: LLM sometimes generates single-quoted JSON with escaped quotes like
-        # -d '{\"key\":\"val\"}' — the \" are literal backslashes after shlex,
-        # making it invalid JSON. Unescape if the result is valid JSON.
-        _DATA_FLAGS = {"-d", "--data", "--data-raw", "--data-binary", "--data-urlencode"}
-        fixed: list[str] = []
-        _i = 0
-        while _i < len(command):
-            arg = command[_i]
-            if arg in _DATA_FLAGS and _i + 1 < len(command):
-                fixed.append(arg)
-                _i += 1
-                data = command[_i]
-                if '\\"' in data:
-                    unescaped = data.replace('\\"', '"')
-                    try:
-                        _json.loads(unescaped)
-                        data = unescaped
-                    except Exception:
-                        pass
-                fixed.append(data)
-            else:
-                fixed.append(arg)
-            _i += 1
-        command = fixed
-        skill_path = _safe_join(self.skills_root, skill_name)
         exe = command[0]
         if exe == "python":
             if "-m" in command:
