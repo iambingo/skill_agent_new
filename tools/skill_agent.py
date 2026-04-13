@@ -712,7 +712,7 @@ class SkillAgentTool(Tool):
                             final_text_already_streamed = True
                     break
 
-                if action.get("type") != "tool":
+                if action.get("type") != "tool" and not action.get("name"):
                     final_text = res_text
                     _dbg(f"final_non_tool type={action.get('type')!s} content_len={len(final_text)}")
                     break
