@@ -381,9 +381,13 @@ class SkillAgentTool(Tool):
                     outputs = event.get("data", {}).get("outputs", {})
                     if not outputs:
                         return ""
-                    if len(outputs) == 1:
-                        return str(next(iter(outputs.values())))
-                    return "\n".join(str(v) for v in outputs.values())
+                    if isinstance(outputs, str):
+                        return outputs
+                    if isinstance(outputs, dict):
+                        if len(outputs) == 1:
+                            return str(next(iter(outputs.values())))
+                        return "\n".join(str(v) for v in outputs.values())
+                    return str(outputs)
             return None
 
         def invoke_llm_live(
