@@ -184,6 +184,13 @@ class _AgentRuntime:
         if not command:
             return {"error": "command must be a non-empty list"}
 
+        # LLM 把多行 curl 转成列表时，会把行续接符变成 '\n' 或 '\\n' 独立元素插入列表。
+        # 同时，列表元素内的换行符也需要清理。
+        command = [str(a) for a in command]
+        command = [a for a in command if a not in ("\n", "\\n", "\r\n", "")]
+        command = [a.replace("\\\n", " ").replace("\n", " ").strip() for a in command]
+        command = [a for a in command if a]  # 再次过滤清理后变空的元素
+
         # LLM 有时会在列表命令的 -d 参数里双重转义 JSON（{\"key\":\"val\"}）。
         # 用 json.loads 验证，确认 unescape 后是合法 JSON 再替换。
         import json as _json
