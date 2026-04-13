@@ -412,25 +412,7 @@ class SkillAgentTool(Tool):
                     streamed_any = True
 
             def should_emit_user_text(text: str) -> bool:
-                if not text:
-                    return False
-                s = str(text)
-                stripped = s.lstrip()
-                if stripped.startswith("{") and _extract_first_json_object(s) is None:
-                    return False
-                if stripped.startswith("```") and stripped.count("```") < 2:
-                    return False
-                json_text = _extract_first_json_object(text)
-                if not json_text:
-                    return True
-                try:
-                    obj = json.loads(json_text)
-                except Exception:
-                    return True
-                if not isinstance(obj, dict):
-                    return True
-                t = obj.get("type")
-                return t not in {"tool", "final"}
+                return False
 
             try:
                 try:
