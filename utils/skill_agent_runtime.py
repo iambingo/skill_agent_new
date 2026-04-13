@@ -151,6 +151,7 @@ class _AgentRuntime:
         if not self.skills_root:
             return {"error": "skills_root not found"}
 
+        import json as _json
         import shlex
         if isinstance(command, str):
             # Normalize line continuations (\<newline>) and bare newlines to spaces
@@ -160,6 +161,31 @@ class _AgentRuntime:
 
         if not command:
             return {"error": "command must be a non-empty list"}
+
+        # Fix: LLM sometimes generates single-quoted JSON with escaped quotes like
+        # -d '{\"key\":\"val\"}' — the \" are literal backslashes after shlex,
+        # making it invalid JSON. Unescape if the result is valid JSON.
+        _DATA_FLAGS = {"-d", "--data", "--data-raw", "--data-binary", "--data-urlencode"}
+        fixed: list[str] = []
+        _i = 0
+        while _i < len(command):
+            arg = command[_i]
+            if arg in _DATA_FLAGS and _i + 1 < len(command):
+                fixed.append(arg)
+                _i += 1
+                data = command[_i]
+                if '\\"' in data:
+                    unescaped = data.replace('\\"', '"')
+                    try:
+                        _json.loads(unescaped)
+                        data = unescaped
+                    except Exception:
+                        pass
+                fixed.append(data)
+            else:
+                fixed.append(arg)
+            _i += 1
+        command = fixed
         skill_path = _safe_join(self.skills_root, skill_name)
         exe = command[0]
         if exe == "python":
