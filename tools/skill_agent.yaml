@@ -84,11 +84,11 @@ parameters:
       pt_BR: Chave de acesso
       ja_JP: アクセスキー
     human_description:
-      en_US: "Project access key. Required if the project has a key set. Leave empty for unprotected projects."
-      zh_Hans: "项目密钥，若该项目设置了密钥则必填，未设置密钥的项目可不填"
-      pt_BR: "Chave de acesso ao projeto. Obrigatória se o projeto tiver uma chave configurada."
-      ja_JP: "プロジェクトのアクセスキー。キーが設定されている場合は必須。"
-    llm_description: "Project access key for authentication."
+      en_US: "Project access key. Required. All projects must have a key set at creation time."
+      zh_Hans: "项目密钥，必填。所有项目在新增时均已设置密钥，此处必须填写对应密钥才能访问。"
+      pt_BR: "Chave de acesso ao projeto. Obrigatória. Todos os projetos possuem chave definida na criação."
+      ja_JP: "プロジェクトのアクセスキー。必須。すべてのプロジェクトは作成時にキーが設定されています。"
+    llm_description: "Project access key. Required for all projects."
     form: form
 
   - name: model
