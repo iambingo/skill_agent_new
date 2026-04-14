@@ -77,7 +77,7 @@ parameters:
 
   - name: access_key
     type: string
-    required: false
+    required: true
     label:
       en_US: Access Key
       zh_Hans: 项目密钥
