@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import mimetypes
 import re
 import shutil
 import tempfile
@@ -181,9 +180,9 @@ class TMTool(Tool):
             yield self.create_text_message("❌请填写项目名称（project_name）。\n")
             return
 
-        # 只读操作：查看技能、技能详情、下载技能 → 不需要密钥
+        # 只读操作：查看技能、技能详情 → 不需要密钥
         _readonly_commands = ("查看技能", "查看 技能", "查看", "技能详情")
-        _is_readonly = command in _readonly_commands or bool(re.match(r"^下载技能\d+$", command))
+        _is_readonly = command in _readonly_commands
         if not _is_readonly:
             if not check_project_key(project_name, access_key):
                 yield self.create_text_message("❌密钥错误，无权对项目【{}】执行写操作。\n".format(project_name))
@@ -328,38 +327,5 @@ class TMTool(Tool):
                 yield self.create_text_message(f"👓当前项目【{project_name}】技能列表：\n" + "\n".join(lines))
             return
 
-        m_dl = re.match(r"^下载技能(\d+)$", command)
-        if m_dl:
-            idx = int(m_dl.group(1))
-            skills = list_skills_sorted(project_name)
-            if idx < 1 or idx > len(skills):
-                yield self.create_text_message("❌技能序号无效或超出范围。请先使用“查看技能”确认序号。\n")
-                return
-            target = skills[idx - 1]
-
-            try:
-                with tempfile.TemporaryDirectory(prefix="skill-zip-") as td:
-                    tmp_dir = Path(td)
-                    zip_path = tmp_dir / f"{target.name}.zip"
-                    shutil.make_archive(str(zip_path.with_suffix("")), "zip", root_dir=target.parent, base_dir=target.name)
-                    blob = zip_path.read_bytes()
-            except Exception as e:
-                yield self.create_text_message(f"❌读取文件失败：{e}\n")
-                return
-
-            mime_type, _ = mimetypes.guess_type(f"{target.name}.zip")
-            if not mime_type:
-                mime_type = "application/zip"
-
-            yield self.create_text_message(f"⬇️开始下载技能{idx}：{target.name}.zip\n")
-            yield self.create_blob_message(
-                blob=blob,
-                meta={
-                    "mime_type": mime_type,
-                    "filename": f"{target.name}.zip",
-                },
-            )
-            return
-
-        yield self.create_text_message("😑未识别的技能管理命令。支持：查看技能、新增技能、删除技能N、下载技能N。\n")
+        yield self.create_text_message(“😑未识别的技能管理命令。支持：查看技能、技能详情、新增技能、删除技能N。\n”)
         return

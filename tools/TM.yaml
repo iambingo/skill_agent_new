@@ -8,11 +8,11 @@ identity:
     ja_JP: "skill manager"
 description:
   human:
-    en_US: "Manage local skill packages (add/delete/list/download)."
-    zh_Hans: "管理本地 skills 技能包：新增/删除/查看/下载"
-    pt_BR: "Gerenciar pacotes de habilidades locais (adicionar/remover/visualizar/baixar)."
-    ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示/ダウンロード）"
-  llm: "Manage local skill packages (add/delete/list/download)"
+    en_US: "Manage local skill packages (add/delete/list)."
+    zh_Hans: "管理本地 skills 技能包：新增/删除/查看"
+    pt_BR: "Gerenciar pacotes de habilidades locais (adicionar/remover/visualizar)."
+    ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示）"
+  llm: "Manage local skill packages (add/delete/list)"
 parameters:
   - name: project_name
     type: string
@@ -38,11 +38,11 @@ parameters:
       pt_BR: Command
       ja_JP: コマンド
     human_description:
-      en_US: "supported commands: add, delete, list, download, detail"
-      zh_Hans: "支持：查看技能、技能详情、新增技能、删除技能N、下载技能N"
-      pt_BR: "Gerenciar pacotes de habilidades locais (adicionar/remover/visualizar/baixar/detalhar)."
-      ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示/ダウンロード/詳細）"
-    llm_description: "supported commands: add, delete, list, download, detail"
+      en_US: "supported commands: add, delete, list, detail"
+      zh_Hans: "支持：查看技能、技能详情、新增技能、删除技能N"
+      pt_BR: "Gerenciar pacotes de habilidades locais (adicionar/remover/visualizar/detalhar)."
+      ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示/詳細）"
+    llm_description: "supported commands: add, delete, list, detail"
     form: llm
   - name: access_key
     type: string
