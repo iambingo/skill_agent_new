@@ -20,6 +20,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+from utils.skill_agent_keys import check_project_key
+
 def _rewrite_internal_url(url: str) -> str:
     parsed = urlparse(url)
     if parsed.hostname == "api":
@@ -174,9 +176,18 @@ class TMTool(Tool):
         command = str(tool_parameters.get("command", "")).strip()
         files_param = tool_parameters.get("files")
         project_name = str(tool_parameters.get("project_name") or "").strip()
+        access_key = str(tool_parameters.get("access_key") or "").strip()
         if not project_name:
             yield self.create_text_message("❌请填写项目名称（project_name）。\n")
             return
+
+        # 只读操作：查看技能、技能详情、下载技能 → 不需要密钥
+        _readonly_commands = ("查看技能", "查看 技能", "查看", "技能详情")
+        _is_readonly = command in _readonly_commands or bool(re.match(r"^下载技能\d+$", command))
+        if not _is_readonly:
+            if not check_project_key(project_name, access_key):
+                yield self.create_text_message("❌密钥错误，无权对项目【{}】执行写操作。\n".format(project_name))
+                return
 
         if command in ("查看技能", "查看 技能", "查看"):
             skills = list_skills_sorted(project_name)

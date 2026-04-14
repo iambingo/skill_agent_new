@@ -44,6 +44,21 @@ parameters:
       ja_JP: "ローカルのスキルパッケージを管理（追加/削除/表示/ダウンロード/詳細）"
     llm_description: "supported commands: add, delete, list, download, detail"
     form: llm
+  - name: access_key
+    type: string
+    required: false
+    label:
+      en_US: Access Key
+      zh_Hans: 项目密钥
+      pt_BR: Chave de acesso
+      ja_JP: アクセスキー
+    human_description:
+      en_US: "Required for write operations (add/delete skill). Not needed for read operations (list/detail/download)."
+      zh_Hans: "写操作（新增/删除技能）时必填；查看/下载技能无需填写"
+      pt_BR: "Obrigatório para operações de escrita. Não necessário para leitura."
+      ja_JP: "書き込み操作時に必須。読み取り操作には不要。"
+    llm_description: "Project access key. Required for 新增技能 and 删除技能N."
+    form: form
   - name: files
     type: files
     required: false

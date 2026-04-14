@@ -8,11 +8,11 @@ identity:
     ja_JP: "project manager"
 description:
   human:
-    en_US: "Manage projects (list/delete)."
-    zh_Hans: "管理项目：查看项目列表、删除项目"
-    pt_BR: "Gerenciar projetos (listar/excluir)."
-    ja_JP: "プロジェクトを管理（一覧/削除）"
-  llm: "Manage projects (add/list/delete)"
+    en_US: "Manage projects (list/add/delete/set key)."
+    zh_Hans: "管理项目：查看项目列表、新增项目、删除项目、设置密钥"
+    pt_BR: "Gerenciar projetos (listar/adicionar/excluir/definir chave)."
+    ja_JP: "プロジェクトを管理（一覧/追加/削除/キー設定）"
+  llm: "Manage projects (add/list/delete/set key)"
 parameters:
   - name: query
     type: string
@@ -23,11 +23,11 @@ parameters:
       pt_BR: Query
       ja_JP: クエリ
     human_description:
-      en_US: "Command to execute: list projects or delete a project."
-      zh_Hans: "执行的指令，例如：查看项目、删除项目"
-      pt_BR: "Comando a executar: listar projetos ou excluir um projeto."
-      ja_JP: "実行するコマンド（例：プロジェクト一覧、プロジェクト削除）"
-    llm_description: "supported commands: 新增项目, 查看项目, 删除项目"
+      en_US: "Command: list projects / add project / delete project / set key"
+      zh_Hans: "执行的指令：查看项目 / 新增项目 / 删除项目 / 设置密钥"
+      pt_BR: "Comando a executar: listar / adicionar / excluir / definir chave"
+      ja_JP: "実行するコマンド（一覧/追加/削除/キー設定）"
+    llm_description: "supported commands: 新增项目, 查看项目, 删除项目, 设置密钥"
     form: llm
   - name: project_name
     type: string
@@ -38,11 +38,41 @@ parameters:
       pt_BR: Project Name
       ja_JP: プロジェクト名
     human_description:
-      en_US: "Required when adding or deleting a project."
-      zh_Hans: "新增项目或删除项目时必填，填写项目名称"
-      pt_BR: "Obrigatório ao adicionar ou excluir um projeto."
-      ja_JP: "プロジェクト削除時に必須"
-    llm_description: "Project name. Required for 新增项目 and 删除项目 commands."
+      en_US: "Required when adding, deleting, or setting key for a project."
+      zh_Hans: "新增/删除项目或设置密钥时必填"
+      pt_BR: "Obrigatório ao adicionar, excluir ou definir chave."
+      ja_JP: "追加/削除/キー設定時に必須"
+    llm_description: "Project name. Required for 新增项目, 删除项目, 设置密钥."
+    form: llm
+  - name: access_key
+    type: string
+    required: false
+    label:
+      en_US: Access Key
+      zh_Hans: 项目密钥
+      pt_BR: Chave de acesso
+      ja_JP: アクセスキー
+    human_description:
+      en_US: "Required when adding or deleting a project, or when updating an existing key. When adding: this becomes the project key. When deleting/updating: must match the stored key."
+      zh_Hans: "新增项目时填写（将作为该项目密钥）；删除项目或修改密钥时填写当前密钥进行验证"
+      pt_BR: "Obrigatório ao adicionar ou excluir projeto, ou ao atualizar chave existente."
+      ja_JP: "追加時は新しいキーとして設定、削除/更新時は現在のキーで認証。"
+    llm_description: "Project access key. Required for 新增项目 (sets key) and 删除项目/设置密钥 (validates current key)."
+    form: llm
+  - name: new_key
+    type: string
+    required: false
+    label:
+      en_US: New Key
+      zh_Hans: 新密钥
+      pt_BR: Nova chave
+      ja_JP: 新しいキー
+    human_description:
+      en_US: "New key to set when using the 设置密钥 command."
+      zh_Hans: "设置密钥时填写新密钥（access_key 填旧密钥用于验证）"
+      pt_BR: "Novo valor de chave ao usar o comando 设置密钥."
+      ja_JP: "設置密钥 コマンドで設定する新しいキー"
+    llm_description: "New key value for 设置密钥 command."
     form: llm
 extra:
   python:

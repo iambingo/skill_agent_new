@@ -64,6 +64,7 @@ class SkillAgentTool(Tool):
         system_prompt = tool_parameters.get("system_prompt") or "你是一个xxxx"
         skills_root = _detect_skills_root(tool_parameters.get("skills_root"))
         project_name = str(tool_parameters.get("project_name") or "").strip()
+        access_key = str(tool_parameters.get("access_key") or "").strip()
         # if project_name:
         #     _plugin_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         #     _project_dir = os.path.join(_plugin_root, "skills", project_name)
@@ -83,6 +84,10 @@ class SkillAgentTool(Tool):
                 yield self.create_text_message(
                     f"❌ 项目「{project_name}」不存在，请先通过技能管理工具创建该项目。\n"
                 )
+                return
+            from utils.skill_agent_keys import check_project_key
+            if not check_project_key(project_name, access_key, _skills_base):
+                yield self.create_text_message("❌密钥错误，无权访问项目。\n")
                 return
             skills_root = _project_dir
         else:

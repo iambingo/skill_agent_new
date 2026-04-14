@@ -13,12 +13,17 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dotenv import load_dotenv
 load_dotenv()
 
+from utils.skill_agent_keys import (
+    check_project_key,
+    has_project_key,
+    set_project_key,
+    remove_project_key,
+    _get_skills_base,
+)
+
 
 def get_skills_root() -> Path:
-    skills_root = os.environ.get("SKILLS_ROOT", "").strip()
-    if skills_root:
-        return Path(skills_root)
-    return Path(__file__).resolve().parent.parent / "skills"
+    return _get_skills_base()
 
 
 def list_projects() -> list[Path]:
@@ -34,17 +39,23 @@ class PMTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         query = str(tool_parameters.get("query") or "").strip()
         project_name = str(tool_parameters.get("project_name") or "").strip()
+        access_key = str(tool_parameters.get("access_key") or "").strip()
+        new_key = str(tool_parameters.get("new_key") or "").strip()
 
         if not query:
             yield self.create_text_message("❌请填写指令（query）。\n")
             return
+
+        root = get_skills_root()
 
         # 新增项目
         if any(kw in query for kw in ("新增项目", "创建项目", "添加项目", "add")):
             if not project_name:
                 yield self.create_text_message("❌新增项目时必须填写项目名称（project_name）。\n")
                 return
-            root = get_skills_root()
+            if not access_key:
+                yield self.create_text_message("❌新增项目时必须填写项目密钥（access_key），该密钥将作为本项目的访问凭证。\n")
+                return
             target = root / project_name
             if target.exists() and target.is_dir():
                 yield self.create_text_message(f"❌项目「{project_name}」已存在，请重新选择一个项目名称。\n")
@@ -54,13 +65,14 @@ class PMTool(Tool):
             except Exception as e:
                 yield self.create_text_message(f"❌创建项目失败：{e}\n")
                 return
-            yield self.create_text_message(f"✅已创建项目「{project_name}」。\n")
+            set_project_key(project_name, access_key)
+            yield self.create_text_message(f"✅已创建项目「{project_name}」并设置密钥。\n")
             projects = list_projects()
             lines = [f"{idx + 1}. {p.name}" for idx, p in enumerate(projects)]
             yield self.create_text_message("👓当前项目列表：\n" + "\n".join(lines) + "\n")
             return
 
-        # 查看项目
+        # 查看项目（无需密钥）
         if any(kw in query for kw in ("查看项目", "项目列表", "所有项目", "list")):
             projects = list_projects()
             if not projects:
@@ -75,7 +87,9 @@ class PMTool(Tool):
             if not project_name:
                 yield self.create_text_message("❌删除项目时必须填写项目名称（project_name）。\n")
                 return
-            root = get_skills_root()
+            if not check_project_key(project_name, access_key):
+                yield self.create_text_message("❌密钥错误，无权删除该项目。\n")
+                return
             target = root / project_name
             if not target.exists() or not target.is_dir():
                 yield self.create_text_message(f"❌项目「{project_name}」不存在。\n")
@@ -85,6 +99,7 @@ class PMTool(Tool):
             except Exception as e:
                 yield self.create_text_message(f"❌删除失败：{e}\n")
                 return
+            remove_project_key(project_name)
             yield self.create_text_message(f"✅已删除项目「{project_name}」。\n")
             projects = list_projects()
             if not projects:
@@ -94,4 +109,25 @@ class PMTool(Tool):
                 yield self.create_text_message("👓当前项目列表：\n" + "\n".join(lines) + "\n")
             return
 
-        yield self.create_text_message("😑未识别的指令。支持：查看项目、删除项目。\n")
+        # 设置密钥（用于老项目接入，或更新密钥）
+        if any(kw in query for kw in ("设置密钥", "更新密钥", "修改密钥", "set_key")):
+            if not project_name:
+                yield self.create_text_message("❌设置密钥时必须填写项目名称（project_name）。\n")
+                return
+            if not new_key:
+                yield self.create_text_message("❌请填写新密钥（new_key）。\n")
+                return
+            target = root / project_name
+            if not target.exists() or not target.is_dir():
+                yield self.create_text_message(f"❌项目「{project_name}」不存在。\n")
+                return
+            # 若项目已有密钥，需校验旧密钥
+            if has_project_key(project_name):
+                if not check_project_key(project_name, access_key):
+                    yield self.create_text_message("❌旧密钥错误，无权修改该项目密钥。\n")
+                    return
+            set_project_key(project_name, new_key)
+            yield self.create_text_message(f"✅已为项目「{project_name}」{'更新' if has_project_key(project_name) else '设置'}密钥。\n")
+            return
+
+        yield self.create_text_message("😑未识别的指令。支持：查看项目、新增项目、删除项目、设置密钥。\n")
