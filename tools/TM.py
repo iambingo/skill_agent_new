@@ -305,27 +305,29 @@ class TMTool(Tool):
             yield self.create_text_message(f"👓当前项目【{project_name}】技能列表：\n" + ("\n".join(lines) if lines else "（空）\n"))
             return
 
-        m_del = re.match(r"^删除技能(\d+)$", command)
-        if m_del:
-            idx = int(m_del.group(1))
-            skills = list_skills_sorted(project_name)
-            if idx < 1 or idx > len(skills):
-                yield self.create_text_message("❌技能序号无效或超出范围。请先使用“查看技能”确认序号。\n")
+        if command in (“删除技能”,):
+            skill_name = str(tool_parameters.get(“skill_name”) or “”).strip()
+            if not skill_name:
+                yield self.create_text_message(“❌删除技能时必须填写技能名称（skill_name）。\n”)
                 return
-            target = skills[idx - 1]
+            skills_dir = get_skills_dir(project_name)
+            target = skills_dir / skill_name
+            if not target.exists() or not target.is_dir():
+                yield self.create_text_message(f”❌技能「{skill_name}」不存在，请先使用”查看技能”确认技能名称。\n”)
+                return
             try:
                 shutil.rmtree(target, ignore_errors=False)
             except Exception as e:
-                yield self.create_text_message(f"❌删除失败：{e}\n")
+                yield self.create_text_message(f”❌删除失败：{e}\n”)
                 return
-            yield self.create_text_message(f"✅已删除技能{idx}：{target.name}\n")
+            yield self.create_text_message(f”✅已删除技能：{skill_name}\n”)
             skills = list_skills_sorted(project_name)
             if not skills:
-                yield self.create_text_message(f"😑当前项目【{project_name}】技能列表为空。\n")
+                yield self.create_text_message(f”😑当前项目【{project_name}】技能列表为空。\n”)
             else:
-                lines = [f"{i + 1}. {p.name}" for i, p in enumerate(skills)]
-                yield self.create_text_message(f"👓当前项目【{project_name}】技能列表：\n" + "\n".join(lines))
+                lines = [f”{i + 1}. {p.name}” for i, p in enumerate(skills)]
+                yield self.create_text_message(f”👓当前项目【{project_name}】技能列表：\n” + “\n”.join(lines))
             return
 
-        yield self.create_text_message(“😑未识别的技能管理命令。支持：查看技能、技能详情、新增技能、删除技能N。\n”)
+        yield self.create_text_message(“😑未识别的技能管理命令。支持：查看技能、技能详情、新增技能、删除技能。\n”)
         return
