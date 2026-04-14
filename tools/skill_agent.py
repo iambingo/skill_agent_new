@@ -348,6 +348,7 @@ class SkillAgentTool(Tool):
 
         final_text: str | None = None
         empty_responses = 0
+        direct_text_retries = 0
         resume_saved = False
         final_text_already_streamed = False
 
@@ -687,12 +688,21 @@ class SkillAgentTool(Tool):
                     if action and action.get("type") == "final":
                         final_text = str(action.get("content") or "")
                         _dbg(f"final_json content_len={len(final_text)}")
+                        break
                     else:
+                        _dbg(f"⚠️ LLM直接输出文本 retry={direct_text_retries} res_text前200字: {res_text[:200]}")
+                        if direct_text_retries < 2:
+                            direct_text_retries += 1
+                            messages.append(AssistantPromptMessage(content=res_text))
+                            messages.append(UserPromptMessage(
+                                content="你刚才直接输出了文本，但任务要求必须通过 run_skill_command 执行命令后再输出结果。请重新发起工具调用。"
+                            ))
+                            continue
                         final_text = res_text
                         _dbg(f"final_text content_len={len(final_text)}")
                         if streamed_any and final_text:
                             final_text_already_streamed = True
-                    break
+                        break
 
                 if action.get("type") != "tool" and not action.get("name"):
                     final_text = res_text
