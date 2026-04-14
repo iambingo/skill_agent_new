@@ -201,7 +201,7 @@ class _AgentRuntime:
                 _cleaned.append(_a)
                 _is_data_value = True
             else:
-                _cleaned.append(_a.replace("\\\n", " ").replace("\n", " ").strip())
+                _cleaned.append(_a.replace("\\\n", " ").replace("\n", " ").replace("\\n", " ").strip())
         command = [a for a in _cleaned if a]
 
         # LLM 有时会在列表命令的 -d 参数里双重转义 JSON（{\"key\":\"val\"}）。
