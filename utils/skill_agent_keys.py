@@ -35,6 +35,11 @@ def _save_keys(keys: dict[str, str], skills_base: Path | str | None = None) -> N
     p.write_text(json.dumps(keys, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def has_project_key(project_name: str, skills_base: Path | str | None = None) -> bool:
+    """返回该项目是否已设置过密钥。"""
+    return bool(_load_keys(skills_base).get(project_name))
+
+
 def check_project_key(project_name: str, provided_key: str | None, skills_base: Path | str | None = None) -> bool:
     """
     校验项目密钥。

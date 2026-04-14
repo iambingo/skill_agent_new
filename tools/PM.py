@@ -15,6 +15,7 @@ load_dotenv()
 
 from utils.skill_agent_keys import (
     check_project_key,
+    has_project_key,
     set_project_key,
     _cleanup_project_key,
     _get_skills_base,
@@ -85,9 +86,12 @@ class PMTool(Tool):
             if not project_name:
                 yield self.create_text_message("❌删除项目时必须填写项目名称（project_name）。\n")
                 return
-            if not check_project_key(project_name, access_key):
-                yield self.create_text_message("❌密钥错误，无权删除该项目。\n")
-                return
+            if has_project_key(project_name):
+                # 项目已设置过密钥，必须验证
+                if not check_project_key(project_name, access_key):
+                    yield self.create_text_message("❌密钥错误，无权删除该项目。\n")
+                    return
+            # 项目未设置过密钥（老项目），直接放行
             target = root / project_name
             if not target.exists() or not target.is_dir():
                 yield self.create_text_message(f"❌项目「{project_name}」不存在。\n")
