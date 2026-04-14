@@ -15,9 +15,8 @@ load_dotenv()
 
 from utils.skill_agent_keys import (
     check_project_key,
-    has_project_key,
     set_project_key,
-    remove_project_key,
+    _cleanup_project_key,
     _get_skills_base,
 )
 
@@ -40,7 +39,6 @@ class PMTool(Tool):
         query = str(tool_parameters.get("query") or "").strip()
         project_name = str(tool_parameters.get("project_name") or "").strip()
         access_key = str(tool_parameters.get("access_key") or "").strip()
-        new_key = str(tool_parameters.get("new_key") or "").strip()
 
         if not query:
             yield self.create_text_message("❌请填写指令（query）。\n")
@@ -54,7 +52,7 @@ class PMTool(Tool):
                 yield self.create_text_message("❌新增项目时必须填写项目名称（project_name）。\n")
                 return
             if not access_key:
-                yield self.create_text_message("❌新增项目时必须填写项目密钥（access_key），该密钥将作为本项目的访问凭证。\n")
+                yield self.create_text_message("❌新增项目时必须填写项目密钥（access_key），该密钥将永久作为本项目的访问凭证，设置后不可更改。\n")
                 return
             target = root / project_name
             if target.exists() and target.is_dir():
@@ -66,7 +64,7 @@ class PMTool(Tool):
                 yield self.create_text_message(f"❌创建项目失败：{e}\n")
                 return
             set_project_key(project_name, access_key)
-            yield self.create_text_message(f"✅已创建项目「{project_name}」并设置密钥。\n")
+            yield self.create_text_message(f"✅已创建项目「{project_name}」并设置密钥。密钥设置后不可更改，请妥善保管。\n")
             projects = list_projects()
             lines = [f"{idx + 1}. {p.name}" for idx, p in enumerate(projects)]
             yield self.create_text_message("👓当前项目列表：\n" + "\n".join(lines) + "\n")
@@ -99,7 +97,7 @@ class PMTool(Tool):
             except Exception as e:
                 yield self.create_text_message(f"❌删除失败：{e}\n")
                 return
-            remove_project_key(project_name)
+            _cleanup_project_key(project_name)
             yield self.create_text_message(f"✅已删除项目「{project_name}」。\n")
             projects = list_projects()
             if not projects:
@@ -109,25 +107,4 @@ class PMTool(Tool):
                 yield self.create_text_message("👓当前项目列表：\n" + "\n".join(lines) + "\n")
             return
 
-        # 设置密钥（用于老项目接入，或更新密钥）
-        if any(kw in query for kw in ("设置密钥", "更新密钥", "修改密钥", "set_key")):
-            if not project_name:
-                yield self.create_text_message("❌设置密钥时必须填写项目名称（project_name）。\n")
-                return
-            if not new_key:
-                yield self.create_text_message("❌请填写新密钥（new_key）。\n")
-                return
-            target = root / project_name
-            if not target.exists() or not target.is_dir():
-                yield self.create_text_message(f"❌项目「{project_name}」不存在。\n")
-                return
-            # 若项目已有密钥，需校验旧密钥
-            if has_project_key(project_name):
-                if not check_project_key(project_name, access_key):
-                    yield self.create_text_message("❌旧密钥错误，无权修改该项目密钥。\n")
-                    return
-            set_project_key(project_name, new_key)
-            yield self.create_text_message(f"✅已为项目「{project_name}」{'更新' if has_project_key(project_name) else '设置'}密钥。\n")
-            return
-
-        yield self.create_text_message("😑未识别的指令。支持：查看项目、新增项目、删除项目、设置密钥。\n")
+        yield self.create_text_message("😑未识别的指令。支持：查看项目、新增项目、删除项目。\n")

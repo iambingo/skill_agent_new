@@ -38,31 +38,25 @@ def _save_keys(keys: dict[str, str], skills_base: Path | str | None = None) -> N
 def check_project_key(project_name: str, provided_key: str | None, skills_base: Path | str | None = None) -> bool:
     """
     校验项目密钥。
-    - 项目未设置密钥 → 直接放行（True）
     - 项目已设置密钥 → provided_key 必须匹配才放行
+    - 项目未设置密钥 → 拒绝访问（所有项目均需密钥）
     """
     keys = _load_keys(skills_base)
     stored = keys.get(project_name)
     if not stored:
-        return True
+        return False
     return bool(provided_key) and provided_key.strip() == stored
 
 
-def has_project_key(project_name: str, skills_base: Path | str | None = None) -> bool:
-    """项目是否已设置密钥。"""
-    keys = _load_keys(skills_base)
-    return bool(keys.get(project_name))
-
-
 def set_project_key(project_name: str, new_key: str, skills_base: Path | str | None = None) -> None:
-    """设置或更新项目密钥。"""
+    """设置项目密钥（仅在新增项目时调用，设置后不可更改）。"""
     keys = _load_keys(skills_base)
     keys[project_name] = new_key.strip()
     _save_keys(keys, skills_base)
 
 
-def remove_project_key(project_name: str, skills_base: Path | str | None = None) -> None:
-    """删除项目密钥（解除保护）。"""
+def _cleanup_project_key(project_name: str, skills_base: Path | str | None = None) -> None:
+    """删除项目时清理密钥记录（内部使用）。"""
     keys = _load_keys(skills_base)
     keys.pop(project_name, None)
     _save_keys(keys, skills_base)
