@@ -317,7 +317,8 @@ class SkillAgentTool(Tool):
             + (uploads_context or "")
             + "技能执行完成后，直接将结果以文本形式输出给用户，不需要写入临时文件或标记交付文件。\n"
             + "禁止在命令中使用任何管道（|）、> 重定向、>> 追加，包括 | tee、| jq 等，命令只输出原始结果即可，插件会自动处理输出。\n"
-            + "run_skill_command 的 command 必须是单行，禁止使用反斜杠换行续接（\\），JSON body 必须压缩成一行，不含换行符。\n\n"
+            + "run_skill_command 的 command 必须是单行，禁止使用反斜杠换行续接（\\），JSON body 必须压缩成一行，不含换行符。\n"
+            + "严禁直接输出命令执行结果或接口返回内容：所有需要执行命令的操作，必须通过 run_skill_command 完成，不得将命令或结果直接写在回复文本中。\n\n"
             + "可用动作：\n"
             + "- get_session_context()\n"
             + "- get_skill_metadata(skill_name)\n"
