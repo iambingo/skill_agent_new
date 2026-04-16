@@ -5,40 +5,35 @@
   <title>Skill Agent 流程图</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <style>
-    body { background: #fff; display: flex; justify-content: center; padding: 40px; }
-    .mermaid { max-width: 900px; }
+    body { background: #fff; display: flex; justify-content: center; padding: 40px; font-family: sans-serif; }
+    .mermaid { max-width: 600px; }
   </style>
 </head>
 <body>
 <div class="mermaid">
 flowchart TD
-    A([用户 query]) --> B[验证项目密钥]
+    A([用户发送请求]) --> B[验证项目密钥]
     B -->|失败| Z([❌ 返回错误])
-    B -->|成功| C[构建 prompt + 技能列表]
-    C --> D[调用 LLM]
+    B -->|成功| C[构建 Prompt\n含技能列表]
+    C --> D[调用 LLM 决策]
 
-    D -->|有 tool_calls\nFunction Call 路径| E{工具名}
-    D -->|纯文本\nJSON Protocol 路径| F{解析 action}
+    D -->|调用工具| E{工具类型}
+    D -->|输出最终回复| OUT
 
-    F -->|type=final| OUT
-    F -->|type=tool| E
-    F -->|格式错误| G[引导 LLM 重试]
-    G --> D
+    E -->|读说明书| T1[读取 SKILL.md]
+    E -->|看目录| T2[列出技能文件]
+    E -->|读文件| T3[读取指定文件]
+    E -->|执行命令| T4[subprocess 运行命令]
 
-    E -->|get_skill_metadata| T1[读 SKILL.md]
-    E -->|list_skill_files| T2[列目录结构]
-    E -->|read_skill_file| T3[读文件内容]
-    E -->|run_skill_command| T4[subprocess 执行命令]
-
-    T1 & T2 & T3 --> CONT[结果追加 messages → 继续循环]
+    T1 & T2 & T3 --> CONT[结果返回给 LLM]
     CONT --> D
 
-    T4 -->|执行失败| CONT
-    T4 -->|执行成功| SSE{是 Dify SSE?}
-    SSE -->|是| EXT[提取 workflow_finished 结果]
-    SSE -->|否| RAW[直接用 stdout]
-    EXT & RAW --> OUT[包装 result 输出给用户 ✅]
+    T4 -->|失败| CONT
+    T4 -->|成功| SSE{解析输出}
+    SSE -->|Dify 接口| EXT[提取工作流结果]
+    SSE -->|普通命令| RAW[直接使用输出]
+    EXT & RAW --> OUT([✅ 返回结果给用户])
 </div>
-<script>mermaid.initialize({startOnLoad:true, theme:'default'});</script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default', flowchart:{curve:'basis'}});</script>
 </body>
 </html>
