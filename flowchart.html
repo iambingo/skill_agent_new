@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Skill Agent 流程图</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    body { background: #fff; display: flex; justify-content: center; padding: 40px; }
+    .mermaid { max-width: 900px; }
+  </style>
+</head>
+<body>
+<div class="mermaid">
+flowchart TD
+    A([用户 query]) --> B[验证项目密钥]
+    B -->|失败| Z([❌ 返回错误])
+    B -->|成功| C[构建 prompt + 技能列表]
+    C --> D[调用 LLM]
+
+    D -->|有 tool_calls\nFunction Call 路径| E{工具名}
+    D -->|纯文本\nJSON Protocol 路径| F{解析 action}
+
+    F -->|type=final| OUT
+    F -->|type=tool| E
+    F -->|格式错误| G[引导 LLM 重试]
+    G --> D
+
+    E -->|get_skill_metadata| T1[读 SKILL.md]
+    E -->|list_skill_files| T2[列目录结构]
+    E -->|read_skill_file| T3[读文件内容]
+    E -->|run_skill_command| T4[subprocess 执行命令]
+
+    T1 & T2 & T3 --> CONT[结果追加 messages → 继续循环]
+    CONT --> D
+
+    T4 -->|执行失败| CONT
+    T4 -->|执行成功| SSE{是 Dify SSE?}
+    SSE -->|是| EXT[提取 workflow_finished 结果]
+    SSE -->|否| RAW[直接用 stdout]
+    EXT & RAW --> OUT[包装 result 输出给用户 ✅]
+</div>
+<script>mermaid.initialize({startOnLoad:true, theme:'default'});</script>
+</body>
+</html>
